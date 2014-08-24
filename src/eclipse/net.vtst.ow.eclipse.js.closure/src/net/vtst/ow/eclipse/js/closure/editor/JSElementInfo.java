@@ -24,17 +24,17 @@ import com.google.javascript.rhino.jstype.ObjectType;
 
 /**
  * Class for storing the information about a JS element.  It provides some logic which is
- * common to completion proposals and hovers.  
- * It implements {@code IAdditionalProposalInfo}, so that it can be passed by a 
+ * common to completion proposals and hovers.
+ * It implements {@code IAdditionalProposalInfo}, so that it can be passed by a
  * completion proposal as an additional proposal info for display when a completion
  * proposal is selected.
  * @author Vincent Simonet
  */
 public class JSElementInfo implements IAdditionalProposalInfoProvider {
-  
+
   private OwJsClosureMessages messages;
   private CompilerRun run;
-  
+
   // Input properties
   private Node node;
   private JSDocInfo docInfo;
@@ -42,11 +42,11 @@ public class JSElementInfo implements IAdditionalProposalInfoProvider {
   private boolean isProperty;
   private boolean isLocalVariable;
   private Visibility visibility = Visibility.PUBLIC;
-  
+
   // Computed properties
   private JSElementKind kind;
   private boolean isNamespace;
-  
+
   // HTML generation
   private StringBuffer buf;
   private String htmlString;
@@ -72,7 +72,7 @@ public class JSElementInfo implements IAdditionalProposalInfoProvider {
     this.isNamespace = isNamespace(node);
     this.kind = computeKind();
   }
-  
+
   /**
    * Creates a new {@code JSElementInfo} from a top-level variable.
    * @param run  The compiler run (to be used to retrieve further information).
@@ -82,17 +82,17 @@ public class JSElementInfo implements IAdditionalProposalInfoProvider {
   public static JSElementInfo makeFromVar(CompilerRun run, Var var) {
     return new JSElementInfo(run, var.getNameNode(), var.getType(), var.getJSDocInfo(), false, var.isLocal());
   }
-  
+
   /**
    * Creates a new {@code JSElementInfo} from a property.
    * @param run  The compiler run (to be used to retrieve further information).
    * @param type  The object type the property belongs to.
    * @param propertyName  The name of the property.  It <b>must</b> exist.
-   * @return  A new {@code JSElementInfo}.  
+   * @return  A new {@code JSElementInfo}.
    */
   public static JSElementInfo makeFromProperty(CompilerRun run, ObjectType type, String propertyName) {
     return new JSElementInfo(
-        run, type.getPropertyNode(propertyName), type.getPropertyType(propertyName), 
+        run, type.getPropertyNode(propertyName), type.getPropertyType(propertyName),
         getJSDocInfoOfProperty(type, propertyName), true, false);
   }
 
@@ -111,7 +111,7 @@ public class JSElementInfo implements IAdditionalProposalInfoProvider {
         JSType propertyType = objectType.getPropertyType(propertyName);
         if (propertyNode != null && propertyType != null) {
           return new JSElementInfo(
-              run, propertyNode, propertyType, 
+              run, propertyNode, propertyType,
               getJSDocInfoOfProperty(objectType, propertyName), true, false);
         }
       }
@@ -131,12 +131,12 @@ public class JSElementInfo implements IAdditionalProposalInfoProvider {
       JSDocInfo docInfo = objectType.getOwnPropertyJSDocInfo(propertyName);
       if (docInfo != null) return docInfo;
     }
-    return null;    
+    return null;
   }
-  
+
   // **************************************************************************
   // Computing properties of the element
-  
+
   private boolean isNamespace(Node node) {
     // First, check whether the node's parent or its grand parent is tagged
     // as a name space.
@@ -147,7 +147,7 @@ public class JSElementInfo implements IAdditionalProposalInfoProvider {
     if (parent2 == null) return false;
     if (parent2.getBooleanProp(Node.IS_NAMESPACE)) return true;
     // Special case for name spaces which are defined by var foo = {} or var foo = foo || {}.
-    if (parent2.getType() != Token.SCRIPT || 
+    if (parent2.getType() != Token.SCRIPT ||
         parent.getType() != Token.VAR ||
         node.getType() != Token.NAME) return false;
     boolean hasValidNode = false;
@@ -167,7 +167,7 @@ public class JSElementInfo implements IAdditionalProposalInfoProvider {
     }
     return hasValidNode;
   }
-  
+
   /**
    * Compute the kind of the completion proposal.
    * @return  The kind of the completion proposal.
@@ -191,17 +191,17 @@ public class JSElementInfo implements IAdditionalProposalInfoProvider {
       return JSElementKind.LOCAL_VARIABLE;
     } else {
       return JSElementKind.GLOBAL_VARIABLE;
-    }    
+    }
   }
-  
+
   public JSElementKind getKind() { return kind; }
   public Node getNode() { return node; }
   public JSType getType() { return type; }
-  
+
   public String getImageName() {
     switch (kind) {
     case NAMESPACE: return OwJsClosureImages.PACKAGE;
-    case CLASS: 
+    case CLASS:
       switch (visibility) {
       case PRIVATE: return OwJsClosureImages.CLASS_PRIVATE;
       case PROTECTED: return OwJsClosureImages.CLASS_PROTECTED;
@@ -213,7 +213,7 @@ public class JSElementInfo implements IAdditionalProposalInfoProvider {
       case PROTECTED: return OwJsClosureImages.INTERFACE_PROTECTED;
       case PUBLIC: return OwJsClosureImages.INTERFACE_PUBLIC;
       }
-    case ENUM: 
+    case ENUM:
       switch (visibility) {
       case PRIVATE: return OwJsClosureImages.ENUM_PRIVATE;
       case PROTECTED: return OwJsClosureImages.ENUM_PROTECTED;
@@ -298,18 +298,18 @@ public class JSElementInfo implements IAdditionalProposalInfoProvider {
   }
 
   // --------------------------------------------------------------------------
-  // Formatting 
-  
+  // Formatting
+
   private void openSection(String title) {
     buf.append("<dl><dt>");
     buf.append(title);
     buf.append("</dt>");
   }
-  
+
   private void closeSection() {
     buf.append("</dl>");
   }
-  
+
   private void openItem() {
     buf.append("<dd>");
   }
@@ -317,12 +317,12 @@ public class JSElementInfo implements IAdditionalProposalInfoProvider {
   private void closeItem() {
     buf.append("</dd>");
   }
-  
+
   private void openSectionAndItem(String title) {
     openSection(title);
     openItem();
   }
-  
+
   private void closeSectionAndItem() {
     closeItem();
     closeSection();
@@ -330,22 +330,22 @@ public class JSElementInfo implements IAdditionalProposalInfoProvider {
 
   // --------------------------------------------------------------------------
   // Description
-  
+
   private void writeDescription(String description) {
     if (description != null) {
       buf.append(description);
       buf.append("<p>");
     }
   }
-    
+
   private void writeFileOverview() {
     writeDescription(docInfo.getFileOverview());
   }
-  
+
   private void writeBlockDescription() {
     writeDescription(docInfo.getBlockDescription());
   }
-  
+
   private void writeOtherInfo() {
     // Deprecated
     if (docInfo.isDeprecated()) {
@@ -362,7 +362,7 @@ public class JSElementInfo implements IAdditionalProposalInfoProvider {
   // --------------------------------------------------------------------------
   // Type information
   // (see com.google.javascript.jscomp.TypedCodeGenerator)
-  
+
   private void writeTypeDescription(String description) {
     if (description != null) {
       buf.append(": ");
@@ -375,7 +375,7 @@ public class JSElementInfo implements IAdditionalProposalInfoProvider {
     buf.append(type.toString());
     buf.append("</em>");
   }
-  
+
   private void writeParameter(Node paramNode, Node typeNode, String description) {
     buf.append("<b>");
     buf.append(paramNode.getString());
@@ -387,7 +387,7 @@ public class JSElementInfo implements IAdditionalProposalInfoProvider {
     }
     writeTypeDescription(description);
   }
-  
+
   private void writeTypeInfo() {
     if (type == null) {
     } else if (type.isFunctionType()) {
@@ -519,7 +519,7 @@ public class JSElementInfo implements IAdditionalProposalInfoProvider {
     return typeString;
   }
 
-  
+
   // **************************************************************************
   // Function parameters
 
@@ -529,7 +529,7 @@ public class JSElementInfo implements IAdditionalProposalInfoProvider {
       String description = docInfo.getDescriptionForParameter(parameterName);
       if (description != null) {
         buf.append(description);
-        buf.append("<p>");        
+        buf.append("<p>");
       }
       openSectionAndItem(messages.getString("jsdoc_type"));
       buf.append("<em>");
@@ -542,17 +542,17 @@ public class JSElementInfo implements IAdditionalProposalInfoProvider {
 
   // **************************************************************************
   // Helper function for parameter nodes
-  
+
   private Node getFunctionNodeOfFunctionParameterNode(Node node) {
     if (node.getType() == Token.NAME) {
       Node parent = node.getParent();
-      if (parent != null && parent.getType() == Token.LP) {
+      if (parent != null) {
         Node parent2 = parent.getParent();
-        if (parent2 != null && parent2.getType() == Token.FUNCTION) 
+        if (parent2 != null && parent2.getType() == Token.FUNCTION)
           return parent2;
       }
     }
     return null;
   }
-  
+
 }

@@ -10,10 +10,18 @@ Export-Package: com.google.common.base,
  com.google.javascript.jscomp.deps,
  com.google.javascript.rhino,
  com.google.javascript.rhino.jstype,
+ com.google.protobuf,
  net.vtst.ow.closure.compiler.compile,
  net.vtst.ow.closure.compiler.deps,
+ net.vtst.ow.closure.compiler.dev,
  net.vtst.ow.closure.compiler.magic,
+ net.vtst.ow.closure.compiler.strip,
  net.vtst.ow.closure.compiler.util
-Bundle-ClassPath: lib/compiler.jar,
- .
-Bundle-Vendor: Vincent Simonet
+Bundle-ClassPath: .,
+ lib/args4j-2.0.29.jar,
+ lib/closure-compiler-v20140730.jar,
+ lib/guava-18.0-rc2.jar,
+ lib/json-20140107.jar,
+ lib/closure-compiler-externs-v20140730.jar,
+ lib/protobuf-java-2.5.0.jar
+Bundle-Vendor: Vincent Simonet/takahashikzn

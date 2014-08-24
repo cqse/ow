@@ -13,32 +13,32 @@ import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.CompilerOptions;
 import com.google.javascript.jscomp.CustomPassExecutionTime;
 import com.google.javascript.jscomp.ErrorManager;
-import com.google.javascript.jscomp.JSSourceFile;
+import com.google.javascript.jscomp.SourceFile;
 
 /**
  * JavaScript processor which removes private definitions and contents of functions, while
  * preserving JSDoc comments.
- * 
+ *
  * @author Vincent Simonet
  */
 public class JSFileStripper {
-  
+
   private Compiler compiler;
   private CompilerOptions options;
   private StripCompilerPass stripCompilerPass;
   private ErrorManager errorManager;
-  
+
   public JSFileStripper(ErrorManager errorManager) {
     this.errorManager = errorManager;
   }
-  
+
   public void setupCompiler(Writer writer) {
     compiler = CompilerUtils.makeCompiler(errorManager);
     options = CompilerUtils.makeOptionsForParsingAndErrorReporting();
     stripCompilerPass = new StripCompilerPass(compiler, writer);
     CompilerUtils.addCustomCompilerPass(options, stripCompilerPass, CustomPassExecutionTime.BEFORE_OPTIMIZATIONS);
   }
-  
+
   /**
    * Run the processor on a JavaScript file.
    * @param input  The input JavaScript file.
@@ -47,15 +47,15 @@ public class JSFileStripper {
    * @throws IOException
    */
   public void strip(File input, File output) throws IOException {
-    JSSourceFile jsInput = JSSourceFile.fromFile(input.getAbsolutePath());
+    SourceFile jsInput = SourceFile.fromFile(input.getAbsolutePath());
     Writer writer = new BufferedWriter(new FileWriter(output));
     setupCompiler(writer);
     compiler.compile(
-        Collections.<JSSourceFile> emptyList(),
-        Collections.singletonList(jsInput), 
+        Collections.<SourceFile> emptyList(),
+        Collections.singletonList(jsInput),
         options);
     if (stripCompilerPass.getException() != null) throw stripCompilerPass.getException();
     writer.close();
   }
-  
+
 }

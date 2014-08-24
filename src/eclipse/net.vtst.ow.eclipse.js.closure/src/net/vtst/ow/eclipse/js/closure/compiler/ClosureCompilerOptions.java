@@ -1,5 +1,12 @@
 package net.vtst.ow.eclipse.js.closure.compiler;
 
+import com.google.javascript.jscomp.ClosureCodingConvention;
+import com.google.javascript.jscomp.CompilationLevel;
+import com.google.javascript.jscomp.CompilerOptions;
+import com.google.javascript.jscomp.JqueryCodingConvention;
+import com.google.javascript.jscomp.WarningLevel;
+import com.google.javascript.jscomp.CompilerOptions.LanguageMode;
+
 import net.vtst.eclipse.easy.ui.properties.stores.IReadOnlyStore;
 import net.vtst.eclipse.easy.ui.properties.stores.ResourcePropertyStore;
 import net.vtst.ow.eclipse.js.closure.OwJsClosurePlugin;
@@ -8,18 +15,12 @@ import net.vtst.ow.eclipse.js.closure.launching.compiler.ClosureCompilerLaunchCo
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 
-import com.google.javascript.jscomp.ClosureCodingConvention;
-import com.google.javascript.jscomp.CompilationLevel;
-import com.google.javascript.jscomp.CompilerOptions;
-import com.google.javascript.jscomp.JqueryCodingConvention;
-import com.google.javascript.jscomp.WarningLevel;
-
 /**
  * This class provides static methods for creating {@code CompilerOptions}.
  * @author Vincent Simonet
  */
 public class ClosureCompilerOptions {
-  
+
   // This is based on CommandLineRunner.createOptions() and AbstractCommandLineRunner.setRunOptions()
   private static CompilerOptions makeInternal(IReadOnlyStore storeForChecks, IReadOnlyStore storeForCompilationOptions, boolean ideMode) throws CoreException {
     ClosureCompilerLaunchConfigurationRecord record = ClosureCompilerLaunchConfigurationRecord.getInstance();
@@ -70,7 +71,7 @@ public class ClosureCompilerOptions {
       // In ADVANCED mode, goog.getMsg is going to be renamed anyway,
       // so we might as well inline it.
       options.messageBundle = new EmptyMessageBundle();
-      
+
       // From AbstractCommandLineRunner.setRunOptions()
       if (config.warningGuards != null) {
         for (WarningGuardSpec.Entry entry : config.warningGuards.entries) {
@@ -140,11 +141,11 @@ public class ClosureCompilerOptions {
     // options.commonJSModulePathPrefix = config.commonJSModulePathPrefix;
 
     // TODO: Only for ide mode?
-    options.setRewriteNewDateGoogNow(false);
     options.setRemoveAbstractMethods(false);
     options.checkTypes = true;
     options.setInferTypes(true);
     options.closurePass = true;
+    options.setLanguageIn(LanguageMode.ECMASCRIPT6_STRICT);
 
     return options;
   }
@@ -153,7 +154,7 @@ public class ClosureCompilerOptions {
     IReadOnlyStore store = new ResourcePropertyStore(project, OwJsClosurePlugin.PLUGIN_ID);
     return makeInternal(store, null, true);
   }
-  
+
   public static CompilerOptions makeForLaunch(IReadOnlyStore storeForChecks, IReadOnlyStore storeForCompilationOptions) throws CoreException {
     return makeInternal(storeForChecks, storeForCompilationOptions, false);
   }

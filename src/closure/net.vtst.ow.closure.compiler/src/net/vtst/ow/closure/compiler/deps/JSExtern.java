@@ -2,7 +2,7 @@ package net.vtst.ow.closure.compiler.deps;
 
 import java.io.File;
 
-import com.google.javascript.jscomp.JSSourceFile;
+import com.google.javascript.jscomp.SourceFile;
 import com.google.javascript.jscomp.SourceFile;
 
 public class JSExtern extends AstFactory {
@@ -11,9 +11,9 @@ public class JSExtern extends AstFactory {
   public JSExtern(SourceFile sourceFile) {
     super(sourceFile);
   }
-  
+
   public JSExtern(File file) {
-    this(JSSourceFile.fromFile(file));
+    this(SourceFile.fromFile(file));
   }
 
 }
