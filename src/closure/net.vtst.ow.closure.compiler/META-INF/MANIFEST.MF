@@ -19,9 +19,10 @@ Export-Package: com.google.common.base,
  net.vtst.ow.closure.compiler.util
 Bundle-ClassPath: .,
  lib/args4j-2.0.29.jar,
- lib/closure-compiler-v20140730.jar,
- lib/guava-18.0-rc2.jar,
- lib/json-20140107.jar,
- lib/closure-compiler-externs-v20140730.jar,
- lib/protobuf-java-2.5.0.jar
+ lib/closure-compiler-externs-v20141120.jar,
+ lib/closure-compiler-v20141120.jar,
+ lib/gson-2.3.1.jar,
+ lib/guava-18.0.jar,
+ lib/json-20141113.jar,
+ lib/protobuf-java-2.6.1.jar
 Bundle-Vendor: Vincent Simonet/takahashikzn

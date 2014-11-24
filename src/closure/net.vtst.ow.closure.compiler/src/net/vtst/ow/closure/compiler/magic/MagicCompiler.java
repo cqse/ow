@@ -22,6 +22,7 @@ import com.google.javascript.jscomp.SourceFile;
 public class MagicCompiler {
 
   private Compiler compiler;
+  private Method compiler_initAST;
   private Method compiler_compile;
   private Field compiler_externs;
   private Field compiler_modules;
@@ -29,13 +30,14 @@ public class MagicCompiler {
   public MagicCompiler(Compiler compiler) {
     this.compiler = compiler;
     this.compiler_compile = Magic.getDeclaredMethod(Compiler.class, "compile");
+    this.compiler_initAST = Magic.getDeclaredMethod(Compiler.class, "initAST");
     this.compiler_externs = Magic.getDeclaredField(Compiler.class, "externs");
     this.compiler_modules = Magic.getDeclaredField(Compiler.class, "modules");
   }
-  
+
   // **************************************************************************
   // This is the pure adaptation of the methods of the Compiler class
-  
+
   private <T extends SourceFile> List<CompilerInput> makeCompilerInput(
       List<T> files, boolean isExtern) {
     List<CompilerInput> inputs = Lists.newArrayList();
@@ -78,12 +80,12 @@ public class MagicCompiler {
       // this.inputs = Compiler.getAllInputsFromModules(modules);
       // This is not useful for the options we run.
       // compiler.initBasedOnOptions();
-  
+
       // compiler.initInputsByIdMap();
-    } catch (IllegalArgumentException e) {
+
+      compiler_initAST.invoke(compiler);
+    } catch(Exception e) {
       throw new MagicException(e);
-    } catch (IllegalAccessException e) {
-      throw new MagicException(e);      
     }
   }
 
@@ -101,7 +103,7 @@ public class MagicCompiler {
       compiler.getErrorManager().generateReport();
     }
   }
-  
+
   private Result compile() {
     try {
       Object result = compiler_compile.invoke(compiler);
@@ -126,13 +128,12 @@ public class MagicCompiler {
       compiler_externs.set(compiler, externs);
       compiler_modules.set(compiler, Lists.newArrayList(module));
       compiler.rebuildInputsFromModules();
-    } catch (IllegalArgumentException e) {
+      compiler_initAST.invoke(compiler);
+    } catch(Exception e) {
       throw new MagicException(e);
-    } catch (IllegalAccessException e) {
-      throw new MagicException(e);      
-    }    
+    }
   }
-  
+
   public Result compile(List<CompilerInput> externs, JSModule module, CompilerOptions options) {
     // The compile method should only be called once.
     Preconditions.checkState(compiler.getRoot() == null);
@@ -152,5 +153,5 @@ public class MagicCompiler {
     MagicCompiler magicCompiler = new MagicCompiler(compiler);
     return magicCompiler.compile(externs, module, options);
   }
-  
+
 }

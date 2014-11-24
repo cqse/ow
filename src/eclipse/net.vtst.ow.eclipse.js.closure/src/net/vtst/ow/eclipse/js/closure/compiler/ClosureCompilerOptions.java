@@ -145,7 +145,8 @@ public class ClosureCompilerOptions {
     options.checkTypes = true;
     options.setInferTypes(true);
     options.closurePass = true;
-    options.setLanguageIn(LanguageMode.ECMASCRIPT6_STRICT);
+    options.setLanguageIn(LanguageMode.ECMASCRIPT5_STRICT);
+    options.setLanguageOut(LanguageMode.NO_TRANSPILE);
 
     return options;
   }
