@@ -9,13 +9,8 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 
-import net.vtst.ow.closure.compiler.deps.JSExtern;
-import net.vtst.ow.closure.compiler.deps.JSUnit;
-import net.vtst.ow.closure.compiler.magic.MagicCompiler;
-import net.vtst.ow.closure.compiler.magic.MagicScopeCreator;
-import net.vtst.ow.closure.compiler.util.CompilerUtils;
-
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.CompilerInput;
 import com.google.javascript.jscomp.CompilerOptions;
@@ -28,10 +23,17 @@ import com.google.javascript.jscomp.JSModule;
 import com.google.javascript.jscomp.JsAst;
 import com.google.javascript.jscomp.PassConfig;
 import com.google.javascript.jscomp.Scope;
-import com.google.javascript.jscomp.Scope.Var;
+import com.google.javascript.jscomp.TypedScope;
+import com.google.javascript.jscomp.Var;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.jstype.JSType;
 import com.google.javascript.rhino.jstype.ObjectType;
+
+import net.vtst.ow.closure.compiler.deps.JSExtern;
+import net.vtst.ow.closure.compiler.deps.JSUnit;
+import net.vtst.ow.closure.compiler.magic.MagicCompiler;
+import net.vtst.ow.closure.compiler.magic.MagicScopeCreator;
+import net.vtst.ow.closure.compiler.util.CompilerUtils;
 
 /**
  * Wrapper class to handle the compilation of a JS unit, and to provide the results.
@@ -41,9 +43,10 @@ import com.google.javascript.rhino.jstype.ObjectType;
  * @author Vincent Simonet
  */
 public class CompilerRun {
-  
+
   private Compiler compiler;
   private CompilerOptions options;
+  private Multimap<CustomPassExecutionTime, CompilerPass> customPasses;
   private PassConfig passes;
   private MagicScopeCreator scopeCreator;
   private NamespaceProvidersMap namespaceToScriptNode = new NamespaceProvidersMap();
@@ -66,25 +69,26 @@ public class CompilerRun {
    * @param entryPoints  A subset of {@code sortedUnits}, these units will not be stripped.
    */
   public CompilerRun(
-      String moduleName, CompilerOptions options, ErrorManager errorManager, 
+      String moduleName, CompilerOptions options, ErrorManager errorManager,
       Collection<JSExtern> externs, List<JSUnit> sortedUnits, Collection<JSUnit> entryPoints,
       boolean keepCompilationResultsInMemory, boolean stripIncludedFiles) {
     this.moduleName = moduleName;
     this.options = options;
+    this.customPasses = CompilerUtils.getCustomPasses(options);
     this.externs = externs;
     this.sortedUnits = sortedUnits;
     this.entryPoints = entryPoints;
     this.keepCompilationResultsInMemory = keepCompilationResultsInMemory;
-    this.stripIncludedFiles = stripIncludedFiles; 
+    this.stripIncludedFiles = stripIncludedFiles;
     // Initializes the compiler and do the first compile
     compile(errorManager);
   }
-  
+
   public void setErrorManager(ErrorManager errorManager) {
     if (compiler == null) return;
     compiler.setErrorManager(errorManager);
   }
-  
+
   private boolean shouldStrip(JSUnit unit) {
     return stripIncludedFiles && !entryPoints.contains(unit);
   }
@@ -99,7 +103,7 @@ public class CompilerRun {
     }
     return module;
   }
-  
+
   private Map<JSUnit, Long> buildLastModifiedMap(List<JSUnit> sortedUnits) {
     Map<JSUnit, Long> map = new HashMap<JSUnit, Long>();
     for (JSUnit unit: sortedUnits) {
@@ -120,7 +124,7 @@ public class CompilerRun {
         options, new NamespaceProvidersPass(compiler, namespaceToScriptNode),
         CustomPassExecutionTime.BEFORE_CHECKS);
     compiler.setPassConfig(passes);
-    
+
     // Store the modification info
     lastModifiedMapForFullCompile = buildLastModifiedMap(sortedUnits);
     lastModifiedMapForFastCompile = Maps.newHashMap(lastModifiedMapForFullCompile);
@@ -132,7 +136,7 @@ public class CompilerRun {
     //   Collections.<SourceFile> emptyList(), Lists.newArrayList(DefaultExternsProvider.getAsModule(), module), options);
     // but this would be less efficient.
     MagicCompiler.compile(compiler, getExternsAsCompilerInputs(), module, options);
-    
+
     // Set-up post-compilation state
     if (keepCompilationResultsInMemory) {
       scopeCreator = new MagicScopeCreator(compiler);
@@ -142,7 +146,7 @@ public class CompilerRun {
       options = null;
     }
   }
-  
+
   public boolean hasChanged(List<JSUnit> newSortedUnits) {
     if (newSortedUnits.size() != lastModifiedMapForFullCompile.size()) return true;
     for (JSUnit unit: newSortedUnits) {
@@ -151,16 +155,16 @@ public class CompilerRun {
     }
     return false;
   }
-  
+
   private List<CompilerInput> getExternsAsCompilerInputs() {
     ArrayList<CompilerInput> result = new ArrayList<CompilerInput>(externs.size());
     for (JSExtern extern: externs) result.add(new CompilerInput(extern.getClone(false), true));
     return result;
   }
-  
+
   // **************************************************************************
   // Fast compilation
-  
+
   /**
    * Run a fast compilation
    */
@@ -180,13 +184,13 @@ public class CompilerRun {
       }
     }
   }
-  
+
   private void processCustomPassesOnNewScript(JsAst ast) {
     if (!keepCompilationResultsInMemory) return;
-    if (options.customPasses == null) return;
+    if (customPasses == null) return;
     Node scriptRoot = ast.getAstRoot(compiler);
     Node originalRoot = compiler.getRoot();
-    for (CompilerPass pass: options.customPasses.get(CustomPassExecutionTime.BEFORE_CHECKS)) {
+    for (CompilerPass pass: customPasses.get(CustomPassExecutionTime.BEFORE_CHECKS)) {
       if (pass instanceof HotSwapCompilerPass) {
         ((HotSwapCompilerPass) pass).hotSwapScript(scriptRoot, originalRoot);
       }
@@ -195,7 +199,7 @@ public class CompilerRun {
 
   // **************************************************************************
   // Accessing to the result of the compilation
-  
+
   public boolean getKeepCompilationResultsInMemory() {
     return keepCompilationResultsInMemory;
   }
@@ -220,7 +224,7 @@ public class CompilerRun {
     // But much more complicated.
     return FindLocationNodeTraversal.findNode(compiler, compiler.getRoot(), unit.getName(), offset);
   }
-  
+
   /**
    * Get the scope for a node (or its first ascendant having a scope).
    * @param node  The node to look for.
@@ -233,9 +237,9 @@ public class CompilerRun {
       if (scope != null) return scope;
       node = node.getParent();
     }
-    return null;    
+    return null;
   }
-  
+
   /**
    * Get all the symbols defined by a scope and its ascendant.  Only the visible symbols (i.e. those which
    * are not overridden by another symbol with the same name in a closest context) are returned.
@@ -253,7 +257,7 @@ public class CompilerRun {
     }
     return vars;
   }
-  
+
   /**
    * Get all the symbols defined for a given node.
    * @param node  The node.
@@ -262,7 +266,7 @@ public class CompilerRun {
   public Iterable<Var> getAllSymbols(Node node) {
     return getAllSymbolsRecursively(getScope(node));
   }
-  
+
   /**
    * Get the script node which provides a name space.
    * @param namespace
@@ -271,9 +275,9 @@ public class CompilerRun {
   public Node getNamespaceProvider(String namespace) {
     return namespaceToScriptNode.get(namespace);
   }
-  
+
   private static String THIS = "this";
-  
+
   /**
    * Return the type of the object designated by a name in the given scope.
    * Takes care of "this".
@@ -282,12 +286,28 @@ public class CompilerRun {
    * @return  The type, or null.
    */
   private static JSType getTypeOfName(Scope scope, String name) {
-    if (THIS.equals(name)) return scope.getTypeOfThis();
+    if (THIS.equals(name)) return getTypeOfThis(scope);
     Var var = scope.getVar(name);
     if (var == null) return null;
-    else return var.getType();
+    else return var.getNode().getJSType();
   }
-  
+
+  private static JSType getTypeOfThis(Scope scope) {
+    if (scope.isGlobal()) {
+      return ObjectType.cast(scope.getRootNode().getJSType());
+    } else if (scope instanceof TypedScope) {
+      return ((TypedScope) scope).getTypeOfThis();
+    }
+
+    // Preconditions.checkState(scope.getRootNode().isFunction());
+    JSType nodeType = scope.getRootNode().getJSType();
+    if (nodeType != null && nodeType.isFunctionType()) {
+      return nodeType.toMaybeFunctionType().getTypeOfThis();
+    } else {
+      return getTypeOfThis( scope.getParent());
+    }
+  }
+
   /**
    * Get the type of the object designated by a qualified name in a given scope.
    * @param scope  The scope to look in.
