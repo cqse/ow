@@ -2,8 +2,10 @@ package net.vtst.ow.closure.compiler.util;
 
 import java.io.File;
 import java.io.PrintStream;
+import java.lang.reflect.Field;
 
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import com.google.javascript.jscomp.AbstractCompiler;
 import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.CompilerOptions;
@@ -70,8 +72,20 @@ public class CompilerUtils {
    */
   public static void addCustomCompilerPass(
       CompilerOptions options, CompilerPass pass, CustomPassExecutionTime executionTime) {
-    if (options.customPasses == null) options.customPasses = ArrayListMultimap.create();
-    options.customPasses.put(executionTime, pass);
+    Multimap<CustomPassExecutionTime, CompilerPass> customPasses = getCustomPasses(options);
+    if (customPasses == null) customPasses = ArrayListMultimap.create();
+    customPasses.put(executionTime, pass);
+  }
+
+  public static Multimap<CustomPassExecutionTime, CompilerPass> getCustomPasses(CompilerOptions options) {
+
+    try {
+      Field customPassesField = options.getClass().getDeclaredField("customPasses");
+      customPassesField.setAccessible(true);
+      return (Multimap<CustomPassExecutionTime, CompilerPass>) customPassesField.get(options);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /**
