@@ -73,10 +73,7 @@ public class CompilerUtils {
   public static void addCustomCompilerPass(
       CompilerOptions options, CompilerPass pass, CustomPassExecutionTime executionTime) {
     Multimap<CustomPassExecutionTime, CompilerPass> customPasses = getCustomPasses(options);
-    if (customPasses == null) {
-      customPasses = ArrayListMultimap.create();
-      setCustomPasses(options, customPasses);
-    }
+    if (customPasses == null) customPasses = ArrayListMultimap.create();
     customPasses.put(executionTime, pass);
   }
 
@@ -86,17 +83,6 @@ public class CompilerUtils {
       Field customPassesField = options.getClass().getDeclaredField("customPasses");
       customPassesField.setAccessible(true);
       return (Multimap<CustomPassExecutionTime, CompilerPass>) customPassesField.get(options);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private static void setCustomPasses(CompilerOptions options, Multimap<CustomPassExecutionTime, CompilerPass>  customPasses) {
-
-    try {
-      Field customPassesField = options.getClass().getDeclaredField("customPasses");
-      customPassesField.setAccessible(true);
-      customPassesField.set(options, customPasses);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

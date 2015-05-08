@@ -2,18 +2,10 @@ package net.vtst.ow.eclipse.js.closure.editor;
 
 import java.util.Set;
 
-import net.vtst.ow.closure.compiler.compile.CompilerRun;
-import net.vtst.ow.eclipse.js.closure.OwJsClosureImages;
-import net.vtst.ow.eclipse.js.closure.OwJsClosureMessages;
-import net.vtst.ow.eclipse.js.closure.OwJsClosurePlugin;
-import net.vtst.ow.eclipse.js.closure.editor.contentassist.IAdditionalProposalInfoProvider;
-import net.vtst.ow.eclipse.js.closure.util.HTMLPrinter;
-import net.vtst.ow.eclipse.js.closure.util.Utils;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import com.google.javascript.jscomp.NodeUtil;
-import com.google.javascript.jscomp.Scope.Var;
+import com.google.javascript.jscomp.Var;
 import com.google.javascript.rhino.JSDocInfo;
 import com.google.javascript.rhino.JSDocInfo.Visibility;
 import com.google.javascript.rhino.Node;
@@ -21,6 +13,14 @@ import com.google.javascript.rhino.Token;
 import com.google.javascript.rhino.jstype.FunctionType;
 import com.google.javascript.rhino.jstype.JSType;
 import com.google.javascript.rhino.jstype.ObjectType;
+
+import net.vtst.ow.closure.compiler.compile.CompilerRun;
+import net.vtst.ow.eclipse.js.closure.OwJsClosureImages;
+import net.vtst.ow.eclipse.js.closure.OwJsClosureMessages;
+import net.vtst.ow.eclipse.js.closure.OwJsClosurePlugin;
+import net.vtst.ow.eclipse.js.closure.editor.contentassist.IAdditionalProposalInfoProvider;
+import net.vtst.ow.eclipse.js.closure.util.HTMLPrinter;
+import net.vtst.ow.eclipse.js.closure.util.Utils;
 
 /**
  * Class for storing the information about a JS element.  It provides some logic which is
@@ -80,11 +80,11 @@ public class JSElementInfo implements IAdditionalProposalInfoProvider {
    * @return  A new {@code JSElementInfo}.
    */
   public static JSElementInfo makeFromVar(CompilerRun run, Var var) {
-    return new JSElementInfo(run, var.getNameNode(), var.getType(), var.getJSDocInfo(), false, var.isLocal());
+    return new JSElementInfo(run, var.getNameNode(), var.getNode().getJSType(), var.getJSDocInfo(), false, var.isLocal());
   }
 
   /**
-   * Creates a new {@code JSElementInfo} from a property.
+   * isLocal a new {@code JSElementInfo} from a property.
    * @param run  The compiler run (to be used to retrieve further information).
    * @param type  The object type the property belongs to.
    * @param propertyName  The name of the property.  It <b>must</b> exist.
@@ -409,7 +409,7 @@ public class JSElementInfo implements IAdditionalProposalInfoProvider {
     if (fnNode == null) return;
     Preconditions.checkState(fnNode.getType() == Token.FUNCTION);
 
-    JSDocInfo fnDocInfo = NodeUtil.getFunctionJSDocInfo(fnNode);
+    JSDocInfo fnDocInfo = fnNode.getJSDocInfo();
     JSType type = fnNode.getJSType();
 
     if (type == null || type.isUnknownType()) {
