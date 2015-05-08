@@ -2,6 +2,12 @@ package net.vtst.ow.eclipse.js.closure.editor.hover;
 
 import java.util.LinkedList;
 
+import com.google.javascript.jscomp.Scope;
+import com.google.javascript.jscomp.Var;
+import com.google.javascript.rhino.Node;
+import com.google.javascript.rhino.Token;
+import com.google.javascript.rhino.jstype.JSType;
+
 import net.vtst.ow.closure.compiler.compile.CompilableJSUnit;
 import net.vtst.ow.closure.compiler.compile.CompilerRun;
 import net.vtst.ow.eclipse.js.closure.builder.ResourceProperties;
@@ -12,12 +18,6 @@ import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IFileEditorInput;
-
-import com.google.javascript.jscomp.Scope;
-import com.google.javascript.jscomp.Scope.Var;
-import com.google.javascript.rhino.Node;
-import com.google.javascript.rhino.Token;
-import com.google.javascript.rhino.jstype.JSType;
 
 // TODO: Update web page to mention the configuration to do
 public class ClosureTextHover extends AbstractTextHover {
@@ -32,7 +32,7 @@ public class ClosureTextHover extends AbstractTextHover {
     if (!(editorInput instanceof IFileEditorInput)) return null;
     return ((IFileEditorInput) editorInput).getFile();
   }
-  
+
   /**
    * @return The JavaScript unit edited in the current editor, or null.
    */
@@ -41,7 +41,7 @@ public class ClosureTextHover extends AbstractTextHover {
     if (file == null) return null;
     return ResourceProperties.getJSUnitOrNullIfCoreException(file);
   }
-  
+
   /**
    * Get the compiler run for a JavaScript unit, and update it.
    * @param unit  The JavaScript unit.
@@ -53,7 +53,7 @@ public class ClosureTextHover extends AbstractTextHover {
     // TODO: Is this thread safe with the completion proposal computer to access further the run?
     return run;
   }
-  
+
   /**
    * Get the qualified name for a node of a JavaScript AST.
    * @param node  The node.
@@ -81,7 +81,7 @@ public class ClosureTextHover extends AbstractTextHover {
       }
     }
   }
-  
+
   /**
    * @return  The element info for a given node, or null.
    */
@@ -102,7 +102,7 @@ public class ClosureTextHover extends AbstractTextHover {
       return JSElementInfo.makeFromPropertyOrNull(run, type, propertyName);
     }
   }
-  
+
   /* (non-Javadoc)
    * @see net.vtst.ow.eclipse.js.closure.editor.hover.AbstractTextHover#getHoverHTML(org.eclipse.jface.text.ITextViewer, org.eclipse.jface.text.IRegion)
    */
