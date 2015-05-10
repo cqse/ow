@@ -13,23 +13,23 @@ import com.google.javascript.rhino.Node;
  * @author Vincent Simonet
  */
 public class MagicCodePrinterBuilder {
-  
+
   public Object codePrinterBuilder;
   public static Constructor<?> constructor;
   public static Method method_build;
-  public static Field field_prettyPrint;
-  public static Field field_outputTypes;
-  
+  public static Method method_prettyPrint;
+  public static Method method_outputTypes;
+
   private static void initialize() {
     if (constructor != null) return;
-    Class<?> cls = 
+    Class<?> cls =
         Magic.getNestedClass(Magic.getClass("com.google.javascript.jscomp.CodePrinter"), "Builder");
     constructor = Magic.getDeclaredConstructor(cls, Node.class);
     method_build = Magic.getDeclaredMethod(cls, "build");
-    field_prettyPrint = Magic.getDeclaredField(cls, "prettyPrint");
-    field_outputTypes = Magic.getDeclaredField(cls, "outputTypes");
+    method_prettyPrint = Magic.getDeclaredMethod(cls, "setPrettyPrint");
+    method_outputTypes = Magic.getDeclaredMethod(cls, "setOutputTypes");
   }
-  
+
   /**
    * @param node  The node to be printed.
    * @param prettyPrint  Whether to pretty print.
@@ -39,8 +39,8 @@ public class MagicCodePrinterBuilder {
     initialize();
     try {
       codePrinterBuilder = constructor.newInstance(node);
-      field_prettyPrint.setBoolean(codePrinterBuilder, prettyPrint);
-      field_outputTypes.setBoolean(codePrinterBuilder, outputTypes);
+      method_prettyPrint.invoke(codePrinterBuilder, prettyPrint);
+      method_outputTypes.invoke(codePrinterBuilder, outputTypes);
     } catch (IllegalArgumentException e) {
       throw new MagicException(e);
     } catch (InstantiationException e) {
@@ -51,7 +51,7 @@ public class MagicCodePrinterBuilder {
       Magic.catchInvocationTargetException(e);
     }
   }
-  
+
   /**
    * Prints the node as a string.
    * @return  The printed representation.
