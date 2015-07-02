@@ -7,21 +7,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import net.vtst.ow.eclipse.less.LessMessages;
-import net.vtst.ow.eclipse.less.LessRuntimeModule;
-import net.vtst.ow.eclipse.less.less.Block;
-import net.vtst.ow.eclipse.less.less.ImportStatement;
-import net.vtst.ow.eclipse.less.less.InnerRuleSet;
-import net.vtst.ow.eclipse.less.less.LessPackage;
-import net.vtst.ow.eclipse.less.less.Mixin;
-import net.vtst.ow.eclipse.less.less.StyleSheet;
-import net.vtst.ow.eclipse.less.less.ToplevelRuleSet;
-import net.vtst.ow.eclipse.less.parser.LessValueConverterService;
-import net.vtst.ow.eclipse.less.properties.LessProjectProperty;
-import net.vtst.ow.eclipse.less.resource.LessResourceDescriptionStrategy;
-
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
@@ -35,6 +23,19 @@ import org.eclipse.xtext.validation.ValidationMessageAcceptor;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+
+import net.vtst.ow.eclipse.less.LessMessages;
+import net.vtst.ow.eclipse.less.LessRuntimeModule;
+import net.vtst.ow.eclipse.less.less.Block;
+import net.vtst.ow.eclipse.less.less.ImportStatement;
+import net.vtst.ow.eclipse.less.less.InnerRuleSet;
+import net.vtst.ow.eclipse.less.less.LessPackage;
+import net.vtst.ow.eclipse.less.less.Mixin;
+import net.vtst.ow.eclipse.less.less.StyleSheet;
+import net.vtst.ow.eclipse.less.less.ToplevelRuleSet;
+import net.vtst.ow.eclipse.less.parser.LessValueConverterService;
+import net.vtst.ow.eclipse.less.properties.LessProjectProperty;
+import net.vtst.ow.eclipse.less.resource.LessResourceDescriptionStrategy;
 
 public class LessImportStatementResolver {
 
@@ -182,6 +183,18 @@ public class LessImportStatementResolver {
     
     private boolean setImportedStyleSheet() {
       IResourceDescription desc = getResourceDescription(this.statement.eResource(), this.uri);
+      if ( desc.isEmpty() ){
+
+          IProject project = LessProjectProperty.getProject(this.statement.eResource());
+          for (IContainer conatiner : projectProperty.getIncludePaths(project)) {
+        	  if( conatiner.getFile(Path.fromOSString(this.uri.toFileString())).exists() ){
+
+            	  desc = getResourceDescription(this.statement.eResource(), 
+            			  createURI( conatiner.getFile(Path.fromOSString(this.uri.toFileString())).getRawLocation().toOSString()) );
+            	  break;
+        	  }
+		}
+      }
       if (desc != null) {
         this.importedStyleSheet = LessResourceDescriptionStrategy.getStyleSheet(desc);
         if (this.importedStyleSheet != null) return true;

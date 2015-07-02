@@ -41,14 +41,14 @@ public class LessProjectProperty {
   
   public Iterable<IContainer> getIncludePaths(IProject project) {
     Iterable<IContainer> result = includePaths.get(project);
-    if (result == null) {
+//    if (result == null) {
       try {
         result = ResourceListProperty.<IContainer>get(IContainer.class, project, new QualifiedName(QUALIFIER, INCLUDE_PATHS));
       } catch (CoreException e) {
         return Collections.<IContainer>emptyList();
       }
       includePaths.put(project, result);
-    }
+//    }
     return result;
   }
   
