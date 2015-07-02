@@ -3,6 +3,8 @@ package net.vtst.ow.eclipse.less.parser;
 import net.vtst.ow.eclipse.less.parser.antlr.internal.InternalLessLexer;
 import net.vtst.ow.eclipse.less.parser.antlr.internal.InternalLessParser;
 
+import java.util.Arrays;
+
 import org.antlr.runtime.CharStream;
 import org.antlr.runtime.CommonToken;
 import org.antlr.runtime.RecognitionException;
@@ -122,7 +124,21 @@ public class CustomizedLessLexer extends InternalLessLexer {
     if (consumeIfMatch("&:extend")) {
       state.type = RULE_AMP_COLON_EXTEND;
       state.channel = DEFAULT_TOKEN_CHANNEL;
-    } else {
+    }
+    else if (consumeIfMatch("filter:")) {
+        while(input.LA(1) != '\n' && input.LA(1) != '\r' && input.LA(1) != ';')
+        {
+            consume(1);
+        }
+        consume(1);
+        state.type = RULE_WS;
+        state.channel = DEFAULT_TOKEN_CHANNEL;
+      }
+    else if (LAequals(1, "-@{")) {
+        consume(1);
+        state.type = RULE_IDENT;
+        state.channel = DEFAULT_TOKEN_CHANNEL;
+      }else {
       super.mTokens();
     }
   }
