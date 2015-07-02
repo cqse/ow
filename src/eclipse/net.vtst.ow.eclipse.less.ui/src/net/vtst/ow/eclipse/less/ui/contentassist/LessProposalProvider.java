@@ -7,12 +7,15 @@ import java.util.Set;
 
 import net.vtst.ow.eclipse.less.CssProfile;
 import net.vtst.ow.eclipse.less.less.Block;
+import net.vtst.ow.eclipse.less.less.BlockContent;
 import net.vtst.ow.eclipse.less.less.Declaration;
 import net.vtst.ow.eclipse.less.less.Expr;
 import net.vtst.ow.eclipse.less.less.FontFaceStatement;
+import net.vtst.ow.eclipse.less.less.Mixin;
 import net.vtst.ow.eclipse.less.less.PageStatement;
 import net.vtst.ow.eclipse.less.less.Property;
 import net.vtst.ow.eclipse.less.less.RawProperty;
+import net.vtst.ow.eclipse.less.less.impl.BlockImpl;
 import net.vtst.ow.eclipse.less.scoping.LessMixinScopeProvider;
 import net.vtst.ow.eclipse.less.scoping.MixinScope;
 import net.vtst.ow.eclipse.less.scoping.MixinScopeElement;
@@ -57,7 +60,7 @@ public class LessProposalProvider extends AbstractLessProposalProvider {
 
   // **************************************************************************
   // Content assist for properties
-  
+
   public void complete_Property(
 		  Block model, 
 		  RuleCall ruleCall,
@@ -67,7 +70,25 @@ public class LessProposalProvider extends AbstractLessProposalProvider {
     addProposalsFromSet(this.cssProfile.getProperties(ruleType), LessImageHelper.PROPERTY, context, acceptor);
   }
 
-  private int getRuleType(Block model) {
+  public void complete_Property(
+		  BlockContent model, 
+		  RuleCall ruleCall,
+		  ContentAssistContext context,
+		  ICompletionProposalAcceptor acceptor) {
+    int ruleType = getRuleType(model); 
+    addProposalsFromSet(this.cssProfile.getProperties(ruleType), LessImageHelper.PROPERTY, context, acceptor);
+  }
+
+  public void complete_Property(
+		  Mixin model, 
+		  RuleCall ruleCall,
+		  ContentAssistContext context,
+		  ICompletionProposalAcceptor acceptor) {
+    int ruleType = getRuleType(model); 
+    addProposalsFromSet(this.cssProfile.getProperties(ruleType), LessImageHelper.PROPERTY, context, acceptor);
+  }
+
+  private int getRuleType(EObject model) {
     if (model == null) return CssProfile.STYLE_RULE;
     EObject container = model.eContainer();
     if (container == null) return CssProfile.STYLE_RULE;
