@@ -1,6 +1,11 @@
 package net.vtst.ow.eclipse.js.closure.builder;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -8,6 +13,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import com.google.javascript.jscomp.Compiler;
+import com.google.javascript.jscomp.CompilerOptions;
+import com.google.javascript.jscomp.DiagnosticType;
+import com.google.javascript.jscomp.ErrorManager;
+import com.google.javascript.jscomp.JSError;
+import com.google.javascript.jscomp.deps.SortedDependencies.CircularDependencyException;
 
 import net.vtst.eclipse.easy.ui.properties.stores.IStore;
 import net.vtst.eclipse.easy.ui.properties.stores.PluginPreferenceStore;
@@ -42,20 +54,13 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.Job;
 
-import com.google.javascript.jscomp.Compiler;
-import com.google.javascript.jscomp.CompilerOptions;
-import com.google.javascript.jscomp.DiagnosticType;
-import com.google.javascript.jscomp.ErrorManager;
-import com.google.javascript.jscomp.JSError;
-import com.google.javascript.jscomp.deps.SortedDependencies.CircularDependencyException;
-
 /**
  * Project builder for the closure compiler.  It is activated on projects having the nature
  * {@code ClosureNature}.
  * @author Vincent Simonet
  */
 public class ClosureBuilder extends IncrementalProjectBuilder {
-  
+
   public static final String BUILDER_ID = "net.vtst.ow.eclipse.js.closure.closureBuilder";
 
   private static final DiagnosticType CIRCULAR_DEPENDENCY_ERROR =
@@ -66,11 +71,11 @@ public class ClosureBuilder extends IncrementalProjectBuilder {
   private OwJsClosureMessages messages = OwJsClosurePlugin.getDefault().getMessages();
   private ProjectOrderManager projectOrderManager = OwJsClosurePlugin.getDefault().getProjectOrderManager();
   private JavaScriptEditorRegistry editorRegistry = OwJsClosurePlugin.getDefault().getEditorRegistry();
-  
+
   public ClosureBuilder() {
     super();
   }
-  
+
   protected void startupOnInitialize() {
     super.startupOnInitialize();
     OwJsDev.log("Initializing builder for: " + getProject().getName());
@@ -79,45 +84,45 @@ public class ClosureBuilder extends IncrementalProjectBuilder {
     this.forgetLastBuiltState();
   }
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.core.resources.IncrementalProjectBuilder#build(int, java.util.Map, org.eclipse.core.runtime.IProgressMonitor)
-	 */
-	protected IProject[] build(
-	    int kind, Map<String, String> args, IProgressMonitor monitor) throws CoreException {
-	  IProject project = getProject();
+    /* (non-Javadoc)
+     * @see org.eclipse.core.resources.IncrementalProjectBuilder#build(int, java.util.Map, org.eclipse.core.runtime.IProgressMonitor)
+     */
+    protected IProject[] build(
+        int kind, Map<String, String> args, IProgressMonitor monitor) throws CoreException {
+      IProject project = getProject();
     OwJsDev.log("Start build: %s", project.getName());
 
-	  monitor.beginTask(messages.format("build_closure", project.getName()), 2);
-		if (kind == FULL_BUILD) {
+      monitor.beginTask(messages.format("build_closure", project.getName()), 2);
+        if (kind == FULL_BUILD) {
       fullBuild(monitor, project);
-		} else {
-			IResourceDelta delta = getDelta(project);
-			if (delta == null) {
-			  fullBuild(monitor, project);
-			} else {
+        } else {
+            IResourceDelta delta = getDelta(project);
+            if (delta == null) {
+              fullBuild(monitor, project);
+            } else {
         incrementalBuild(monitor, project, delta);
-			}
-		}
+            }
+        }
     monitor.done();
     OwJsDev.log("End build: %s", project.getName());
-		return ResourceProperties.getTransitivelyReferencedProjects(project);
-	}
-	
-	/* (non-Javadoc)
-	 * @see org.eclipse.core.resources.IncrementalProjectBuilder#clean(org.eclipse.core.runtime.IProgressMonitor)
-	 */
-	protected void clean(IProgressMonitor monitor) throws CoreException {
+        return ResourceProperties.getTransitivelyReferencedProjects(project);
+    }
+
+    /* (non-Javadoc)
+     * @see org.eclipse.core.resources.IncrementalProjectBuilder#clean(org.eclipse.core.runtime.IProgressMonitor)
+     */
+    protected void clean(IProgressMonitor monitor) throws CoreException {
     IProject project = getProject();
     OwJsDev.log("Clean build: %s", project.getName());
     ResourceProperties.clearProject(project);
     // Note that this heavily rely that clean is called on all projects before build is called
     // on any project (otherwise, it would be pretty unefficient).
     jsLibraryProvider.clear();
-	}
+    }
 
-	// **************************************************************************
-	// Full build
-  
+    // **************************************************************************
+    // Full build
+
   /**
    * Perform a full build of a project.
    * @param monitor  The project monitor.  This methods reports two units of work.
@@ -135,11 +140,11 @@ public class ClosureBuilder extends IncrementalProjectBuilder {
         monitor.worked(1);
         return;
       }
-  
+
       // Create or get the project
       JSProject jsProject = ResourceProperties.getOrCreateJSProject(project);
       boolean jsProjectUpdated = updateJSProjectIfNeeded(monitor, compiler, project, jsProject);
-      
+
       // Set the compilation units
       Set<IFile> files = ClosureCompiler.getJavaScriptFilesOfProject(project);
       ResourceProperties.setJavaScriptFiles(project, files);
@@ -157,7 +162,7 @@ public class ClosureBuilder extends IncrementalProjectBuilder {
         }
         units.add(unit);
       }
-  
+
       try {
         jsProject.setUnits(compiler, units);
         monitor.worked(1);
@@ -171,19 +176,19 @@ public class ClosureBuilder extends IncrementalProjectBuilder {
       if (forgetIfCanceled) forgetLastBuiltState();
       throw e;
     } finally {
-      compiler.getErrorManager().generateReport();      
+      compiler.getErrorManager().generateReport();
     }
   }
-  
+
   // **************************************************************************
   // Incremental build
-  
+
   private class ResourceDeltaVisitorForIncrementalBuild implements IResourceDeltaVisitor {
-    
+
     private boolean fullBuildRequired = false;
     private Collection<IFile> currentFiles;
     private List<IFile> changedFiles = new LinkedList<IFile>();
-    
+
     public ResourceDeltaVisitorForIncrementalBuild(Collection<IFile> currentFiles) {
       this.currentFiles = currentFiles;
     }
@@ -213,7 +218,7 @@ public class ClosureBuilder extends IncrementalProjectBuilder {
       }
       return true;
     }
-    
+
     public boolean fullBuildRequired() {
       return fullBuildRequired;
     }
@@ -256,7 +261,7 @@ public class ClosureBuilder extends IncrementalProjectBuilder {
    * @param monitor  This method reports one unit of work.
    * @param project  The project the files belong to.
    * @param files  The collection of files to compile.
-   * @param force  If true, forces the compilation of all files, even those which are 
+   * @param force  If true, forces the compilation of all files, even those which are
    * not modified since their last build.
    * @throws CoreException
    */
@@ -282,7 +287,7 @@ public class ClosureBuilder extends IncrementalProjectBuilder {
     }
     subMonitor.done();
   }
-  
+
   /**
    * @return  The status of the workspace preference stripProjectFiles.
    */
@@ -324,21 +329,27 @@ public class ClosureBuilder extends IncrementalProjectBuilder {
    */
   private CompilerOptions cloneCompilerOptions(IProject project, CompilerOptions options) throws CoreException {
     try {
-      return (CompilerOptions) options.clone();
-    } catch (CloneNotSupportedException e) {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      ObjectOutputStream oos = new ObjectOutputStream(baos);
+      oos.writeObject(options);
+      ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
+      return (CompilerOptions) ois.readObject();
+      // return (CompilerOptions) options.clone();
+      //} catch (CloneNotSupportedException e) {
+    } catch (Exception e) {
       // This should never happen, but anyway, let's do it.
       OwJsDev.log("ClosureBuilder.cloneCompilerOptions: cannot clone options, generate fresh ones.");
       return ClosureCompilerOptions.makeForBuilder(project);
     }
   }
-  
+
   /**
    * Compile a JavaScript file.
    */
   private void compileJavaScriptFile(
       IFile file, CompilerOptions options,
       boolean fileIsOpen,
-      boolean stripIncludedFiles, 
+      boolean stripIncludedFiles,
       boolean doNotKeepCompilationResultsOfClosedFilesInMemory,
       boolean force) throws CoreException {
     OwJsDev.log("Compiling %s", file.getFullPath().toOSString());
@@ -353,7 +364,7 @@ public class ClosureBuilder extends IncrementalProjectBuilder {
 
   // **************************************************************************
   // Referenced projects
-  
+
   /**
    * @param monitor  Progress monitor checked for cancellation.
    * @param compiler  Compiler used to parse libraries.
@@ -363,7 +374,7 @@ public class ClosureBuilder extends IncrementalProjectBuilder {
    * @throws CoreException
    */
   private boolean updateJSProjectIfNeeded(
-      IProgressMonitor monitor, Compiler compiler, 
+      IProgressMonitor monitor, Compiler compiler,
       IProject project, JSProject jsProject) throws CoreException {
     // Get the referenced projects and libraries
     ProjectOrderManager.State projectOrderState = projectOrderManager.get();
@@ -377,14 +388,14 @@ public class ClosureBuilder extends IncrementalProjectBuilder {
     ArrayList<AbstractJSProject> referencedProjectsAndLibraries = new ArrayList<AbstractJSProject>(projects.size() + libraries.size());
     for (IProject referencedProject: projects) referencedProjectsAndLibraries.add(ResourceProperties.getOrCreateJSProject(referencedProject));
     referencedProjectsAndLibraries.addAll(libraries);
-    
+
     // Store the results in the jsProject.
     ResourceProperties.setTransitivelyReferencedProjects(project, projects.toArray(new IProject[0]));
     jsProject.setReferencedProjects(referencedProjectsAndLibraries, projectOrderState.getModificationStamp());
     jsProject.setExterns(jsLibraryProvider.getExterns(compiler, monitor, projects));
     return true;
   }
-    
+
   /**
    * Force a build of all JavaScript projects in the workspace.
    */
