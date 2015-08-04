@@ -23,6 +23,6 @@ Bundle-ClassPath: .,
  lib/json-20141113.jar,
  lib/protobuf-java-2.6.1.jar,
  lib/args4j-2.32.jar,
- lib/closure-compiler-externs-v20150609.jar,
- lib/closure-compiler-v20150609.jar
+ lib/closure-compiler-externs-v20150729.jar,
+ lib/closure-compiler-v20150729.jar
 Bundle-Vendor: Vincent Simonet/takahashikzn
