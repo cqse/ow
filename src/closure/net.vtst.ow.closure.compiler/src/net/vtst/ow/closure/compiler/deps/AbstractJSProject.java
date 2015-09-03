@@ -8,14 +8,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import net.vtst.ow.closure.compiler.util.ListWithoutDuplicates;
-
 import com.google.javascript.jscomp.AbstractCompiler;
 import com.google.javascript.jscomp.DiagnosticType;
 import com.google.javascript.jscomp.JSError;
+import com.google.javascript.jscomp.deps.ClosureSortedDependencies;
 import com.google.javascript.jscomp.deps.SortedDependencies;
 import com.google.javascript.jscomp.deps.SortedDependencies.CircularDependencyException;
 import com.google.javascript.jscomp.deps.SortedDependencies.MissingProvideException;
+
+import net.vtst.ow.closure.compiler.util.ListWithoutDuplicates;
 
 /**
  * A super class for {@code JSLibrary} and {@code JSProject}.
@@ -24,30 +25,30 @@ import com.google.javascript.jscomp.deps.SortedDependencies.MissingProvideExcept
  * @author Vincent Simonet
  */
 public abstract class AbstractJSProject {
-  
+
   SortedDependencies<? extends JSUnit> dependencies;
-  
+
   /**
    * Set the list of units for the project, and re-build the dependency graph.
    * @param units  The new list of units.
    * @throws CircularDependencyException  If there is a circular dependency in the passed list.
    */
   public synchronized <T extends JSUnit> void setUnits(AbstractCompiler compiler, List<T> units) throws CircularDependencyException {
-    dependencies = new SortedDependencies<T>(units);
+    dependencies = new ClosureSortedDependencies<T>(units);
     int index = 0;
     for (JSUnit unit: dependencies.getSortedList()) {
       unit.dependencyIndex = index;
       ++index;
     }
   }
-  
+
   private static Comparator<JSUnit> jsUnitComparator = new Comparator<JSUnit>() {
     @Override
     public int compare(JSUnit unit1, JSUnit unit2) {
       return (unit1.dependencyIndex - unit2.dependencyIndex);
     }
   };
-  
+
   /**
    * Sort a list of compilation units (which should belong to the current project), according
    * to their dependency order.
@@ -74,7 +75,7 @@ public abstract class AbstractJSProject {
 
   /**
    * @return  The list of referenced projects.  The project must be ordered according to their
-   * dependencies, in decreasing order: if A comes before B, A may depend on B, but B cannot 
+   * dependencies, in decreasing order: if A comes before B, A may depend on B, but B cannot
    * depend on A.  Note there is no recursion: the referenced projects of referenced projects
    * must be included in the list if needed.
    */
@@ -96,7 +97,7 @@ public abstract class AbstractJSProject {
         visit(referencedProject, Collections.<JSUnit>emptySet());
       }
     }
-    
+
     void visit(AbstractJSProject project, Iterable<JSUnit> units) {
       LinkedList<String> remainingNames = new LinkedList<String>();
       ListWithoutDuplicates<JSUnit> unitsInThisProject = new ListWithoutDuplicates<JSUnit>();
@@ -124,7 +125,7 @@ public abstract class AbstractJSProject {
       project.sortUnitsByDependencies(unitsInThisProject.asList());
       results.add(unitsInThisProject.asList());
     }
-    
+
     ArrayList<JSUnit> get() {
       int size = 0;
       for (ArrayList<JSUnit> list: results) size += list.size();
@@ -133,9 +134,9 @@ public abstract class AbstractJSProject {
         result.addAll(results.get(i));
       }
       return result;
-    }    
+    }
   }
-  
+
   /**
    * Returns the list of units which are required to build {@code unit}, ordered according to
    * their dependencies.  Units from referenced projects are included.
@@ -146,7 +147,7 @@ public abstract class AbstractJSProject {
     DependencyBuilder builder = new DependencyBuilder(this, Collections.singleton(unit));
     return builder.get();
   }
-  
+
   /**
    * Returns the list of units which are required to build {@code units}, ordered according to
    * their dependencies.  Units from referenced projects are included.
@@ -161,12 +162,12 @@ public abstract class AbstractJSProject {
 
   // **************************************************************************
   // Error reporting
-  
+
   static final DiagnosticType CIRCULAR_DEPENDENCY_ERROR =
       DiagnosticType.error("JSC_CIRCULAR_DEP",
           "Circular dependency detected: {0}");
 
   protected void reportError(AbstractCompiler compiler, CircularDependencyException e) {
-    compiler.report(JSError.make(CIRCULAR_DEPENDENCY_ERROR, e.getMessage()));   
+    compiler.report(JSError.make(CIRCULAR_DEPENDENCY_ERROR, e.getMessage()));
   }
 }
