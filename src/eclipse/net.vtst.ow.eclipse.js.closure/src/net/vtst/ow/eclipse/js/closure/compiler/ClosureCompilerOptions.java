@@ -135,7 +135,8 @@ public class ClosureCompilerOptions {
     //   }
     // }
 
-    options.setAcceptConstKeyword(record.checks.acceptConstKeyword.get(storeForChecks));
+    options.setInferConst(record.checks.acceptConstKeyword.get(storeForChecks));
+    // options.setAcceptConstKeyword(record.checks.acceptConstKeyword.get(storeForChecks));
     // options.transformAMDToCJSModules = config.transformAMDToCJSModules;
     // options.processCommonJSModules = config.processCommonJSModules;
     // options.commonJSModulePathPrefix = config.commonJSModulePathPrefix;
@@ -145,7 +146,7 @@ public class ClosureCompilerOptions {
     options.checkTypes = true;
     options.setInferTypes(true);
     options.closurePass = true;
-    options.setLanguageIn(LanguageMode.ECMASCRIPT5_STRICT);
+    options.setLanguageIn(LanguageMode.ECMASCRIPT6_STRICT);
     options.setLanguageOut(LanguageMode.NO_TRANSPILE);
 
     return options;
