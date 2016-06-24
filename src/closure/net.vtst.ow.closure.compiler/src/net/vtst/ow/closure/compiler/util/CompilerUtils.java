@@ -2,8 +2,10 @@ package net.vtst.ow.closure.compiler.util;
 
 import java.io.File;
 import java.io.PrintStream;
+import java.lang.reflect.Field;
 
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import com.google.javascript.jscomp.AbstractCompiler;
 import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.CompilerOptions;
@@ -47,7 +49,7 @@ public class CompilerUtils {
     Compiler compiler = new Compiler(errorManager);
     compiler.disableThreads();
     return compiler;
-  }  
+  }
 
   /**
    * Create a new compiler options object, with the minimum options for a compiler used either
@@ -58,8 +60,7 @@ public class CompilerUtils {
     // These options should remain minimal, because they are used by the stripper.
     CompilerOptions options = new CompilerOptions();
     options.ideMode = true;
-    options.setRewriteNewDateGoogNow(false);
-    options.setRemoveAbstractMethods(false);    
+    options.setRemoveAbstractMethods(false);
     return options;
   }
 
@@ -71,10 +72,22 @@ public class CompilerUtils {
    */
   public static void addCustomCompilerPass(
       CompilerOptions options, CompilerPass pass, CustomPassExecutionTime executionTime) {
-    if (options.customPasses == null) options.customPasses = ArrayListMultimap.create();
-    options.customPasses.put(executionTime, pass);
+    Multimap<CustomPassExecutionTime, CompilerPass> customPasses = getCustomPasses(options);
+    if (customPasses == null) customPasses = ArrayListMultimap.create();
+    customPasses.put(executionTime, pass);
   }
-  
+
+  public static Multimap<CustomPassExecutionTime, CompilerPass> getCustomPasses(CompilerOptions options) {
+
+    try {
+      Field customPassesField = options.getClass().getDeclaredField("customPasses");
+      customPassesField.setAccessible(true);
+      return (Multimap<CustomPassExecutionTime, CompilerPass>) customPassesField.get(options);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   /**
    * Report an error via an error manager.
    * @param manager  The error manager to use for reporting the error.
@@ -83,7 +96,7 @@ public class CompilerUtils {
   public static void reportError(ErrorManager manager, JSError error) {
     manager.report(error.getDefaultLevel(), error);
   }
-  
+
   /**
    * Report an error via the error manager of a compiler.
    * @param compiler  The compiler whose error manager will be used for reporting the error.

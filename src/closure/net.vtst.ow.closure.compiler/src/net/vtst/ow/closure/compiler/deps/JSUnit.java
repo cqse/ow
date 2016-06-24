@@ -20,12 +20,12 @@ import com.google.javascript.rhino.Node;
  * objects for the same file!
  * <br>
  * <b>Thread safety:</b>  This class maintain the AST and the dependencies for the unit as an internal
- * state.  In order to ensure safe concurrent accesses, the public methods manipulating them are 
+ * state.  In order to ensure safe concurrent accesses, the public methods manipulating them are
  * synchronized.  The provides/requires are thread safe as they are immutable collections.
  * @author Vincent Simonet
  */
 public class JSUnit implements DependencyInfo {
-    
+
   private File path;
   private File pathOfClosureBase;
   private JSUnitProvider.IProvider provider;
@@ -49,7 +49,7 @@ public class JSUnit implements DependencyInfo {
     this.timestampKeeperForDependencies = new TimestampKeeper(provider);
     this.astFactory = new AstFactoryFromModifiable(getName(), provider);
   }
-  
+
   /**
    * Constructor which is useful when the dependencies are known at creation time,
    * e.g. when the unit is created from a library which has a deps.js file.
@@ -68,7 +68,7 @@ public class JSUnit implements DependencyInfo {
   public String getName() {
     return path.getPath();
   }
-  
+
   /** Gets the path of this file relative to Closure's base.js file. */
   public String getPathRelativeToClosureBase() {
     if (pathRelativeToClosureBase == null) {
@@ -76,14 +76,14 @@ public class JSUnit implements DependencyInfo {
     }
     return pathRelativeToClosureBase.getPath();
   }
-  
+
   public long lastModified() {
     return provider.lastModified();
-  }  
-  
+  }
+
   // **************************************************************************
   // Dependencies
-  
+
   /**
    * Get the names (namespaces and classes) provided by the compilation unit.
    * @return  The collection of the names.
@@ -91,7 +91,7 @@ public class JSUnit implements DependencyInfo {
   public Collection<String> getProvides() {
     return Collections.unmodifiableCollection(providedNames);
   }
-  
+
   /**
    * Add a provided name.  This method is <b>not</b> thread safe.  It should not be called if the
    * object can be accessed from several threads.
@@ -100,7 +100,7 @@ public class JSUnit implements DependencyInfo {
   void addProvide(String name) {
     providedNames.add(name);
   }
-  
+
   /**
    * Get the names (namespaces and classes) required by the compilation unit.
    * @return  The collection of the names.
@@ -151,7 +151,7 @@ public class JSUnit implements DependencyInfo {
     this.providedNames = providedNames;  // Atomic set
     this.requiredNames = requiredNames;  // Atomic set
   }
-  
+
   public long getDependenciesModificationStamp() {
     return dependenciesModificationStamp;
   }
@@ -166,13 +166,18 @@ public class JSUnit implements DependencyInfo {
   public synchronized JsAst getAst(boolean stripped) {
     return astFactory.getClone(stripped);
   }
-  
+
   // **************************************************************************
   // Dependency order
 
   /**
-   * This is a placeholder for the containing project.  It should not be used 
+   * This is a placeholder for the containing project.  It should not be used
    * elsewhere.
    */
   public int dependencyIndex;
+
+  @Override
+  public boolean isModule() {
+    return true;
+  }
 }

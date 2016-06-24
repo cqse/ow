@@ -6,18 +6,18 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import net.vtst.ow.closure.compiler.compile.CompilerRun;
-import net.vtst.ow.eclipse.js.closure.editor.JSElementInfo;
-
 import com.google.common.collect.Lists;
 import com.google.javascript.jscomp.Scope;
-import com.google.javascript.jscomp.Scope.Var;
+import com.google.javascript.jscomp.Var;
 import com.google.javascript.rhino.JSDocInfo;
 import com.google.javascript.rhino.JSDocInfo.Visibility;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.jstype.JSType;
 import com.google.javascript.rhino.jstype.ObjectType;
 import com.google.javascript.rhino.jstype.UnionType;
+
+import net.vtst.ow.closure.compiler.compile.CompilerRun;
+import net.vtst.ow.eclipse.js.closure.editor.JSElementInfo;
 
 /**
  * Helper class for creating and collecting closure completion proposals.
@@ -26,11 +26,11 @@ import com.google.javascript.rhino.jstype.UnionType;
 public class ClosureCompletionProposalCollector {
 
   private ClosureContentAssistIncovationContext context;
-  
+
   public ClosureCompletionProposalCollector(ClosureContentAssistIncovationContext context) {
     this.context = context;
   }
-    
+
   /**
    * Get all the completion proposals which are valid in the given context.
    * @return  The list of the completion proposals.
@@ -43,7 +43,7 @@ public class ClosureCompletionProposalCollector {
         return getProposalsFromScope();
       } catch (RuntimeException e) {
         return Collections.emptyList();
-      }      
+      }
     } else {
       Scope scope = run.getScope(context.getNode());
       if (scope == null) return Collections.emptyList();
@@ -55,8 +55,8 @@ public class ClosureCompletionProposalCollector {
 
   // **************************************************************************
   // Getting completion proposals from variables in the scope
-  
-  
+
+
   /**
    * Get the list of completion proposals computed from the scope.  This method is called
    * in the case where the prefix does not contain a dot.
@@ -75,7 +75,7 @@ public class ClosureCompletionProposalCollector {
     }
     return list;
   }
-  
+
   // **************************************************************************
   // Getting completion proposals from properties
 
@@ -96,7 +96,7 @@ public class ClosureCompletionProposalCollector {
     }
     return Lists.newArrayList(map.values());
   }
-  
+
   /**
    * Get the visibility of a property for a given object type, by walking through the type hierarchy.
    * @param objectType  The object type to inspect.
@@ -145,11 +145,11 @@ public class ClosureCompletionProposalCollector {
           }
         }
       }
-    }    
+    }
   }
-  
+
   // **************************************************************************
-  // Predicates 
+  // Predicates
 
   /**
    * Tests whether a name is a simple name (v.s. a qualified name).
@@ -169,7 +169,7 @@ public class ClosureCompletionProposalCollector {
   private boolean isConcreteNode(Node node) {
     return node != null && !node.isSyntheticBlock() && node.getLineno() >= 0;
   }
-  
+
   /**
    * Tests whether a property name should be shown as a completion proposal.
    * @param name  A property name.
@@ -178,7 +178,7 @@ public class ClosureCompletionProposalCollector {
   private boolean isVisibleName(String name) {
     int n = name.length();
     if (n < 4) return true;
-    return name.charAt(0) != '_' || name.charAt(1) != '_' || 
+    return name.charAt(0) != '_' || name.charAt(1) != '_' ||
         name.charAt(n - 1) != '_' || name.charAt(n - 2) != '_';
   }
 
@@ -190,7 +190,7 @@ public class ClosureCompletionProposalCollector {
    */
   private boolean isValidForPrefix(String name, String prefix) {
     // Test if name starts by prefix, ignoring case.
-    // This check must be consistent with the one implemented in 
+    // This check must be consistent with the one implemented in
     // AbstractCompletionProposal.validate
     return name.regionMatches(true, 0, prefix, 0, prefix.length());
   }

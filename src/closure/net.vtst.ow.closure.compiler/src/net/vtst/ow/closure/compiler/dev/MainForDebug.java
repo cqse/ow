@@ -3,6 +3,7 @@ import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import net.vtst.ow.closure.compiler.deps.AstFactoryFromModifiable;
 import net.vtst.ow.closure.compiler.util.CompilerUtils;
@@ -14,7 +15,7 @@ import com.google.javascript.jscomp.CompilerOptions;
 import com.google.javascript.jscomp.CompilerPass;
 import com.google.javascript.jscomp.DefaultPassConfig;
 import com.google.javascript.jscomp.JSModule;
-import com.google.javascript.jscomp.JSSourceFile;
+import com.google.javascript.jscomp.SourceFile;
 import com.google.javascript.jscomp.Scope;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.jstype.JSType;
@@ -22,17 +23,17 @@ import com.google.javascript.rhino.jstype.JSType;
 /*
  * Some performance measurements.
  * Compilation in ideMode.
- * 10 compilations 
+ * 10 compilations
  *                    Original Closure Lib   Stripped Closure Lib
  * Input files        758                    758
  * Output size        4628978                2575367
  * Time 10 files
  *      File          22.56                  13.38
- *      JSSourceFile  21.69                  12.85         
+ *      SourceFile  21.69                  12.85
  *      ast.clone()   16.19                   9.20
  * Time 9 last files
  *      File          16.59                  9.26
- *      JSSourceFile  15.73                  8.79
+ *      SourceFile  15.73                  8.79
  *      ast.clone()   10.07                  5.25
  *      with typing                          24.23
  * Combination of all my optimizations = 4.13
@@ -41,16 +42,16 @@ import com.google.javascript.rhino.jstype.JSType;
 public class MainForDebug {
   private static Method method;
   private static DefaultPassConfig passConfig;
-  
+
   public static void measureTime() {
     final ArrayList<File> listFiles = new ArrayList<File>();
-    final ArrayList<JSSourceFile> listSourceFiles = new ArrayList<JSSourceFile>();
-    final ArrayList<AstFactoryFromModifiable> listAsts = new ArrayList<AstFactoryFromModifiable>(); 
+    final ArrayList<SourceFile> listSourceFiles = new ArrayList<SourceFile>();
+    final ArrayList<AstFactoryFromModifiable> listAsts = new ArrayList<AstFactoryFromModifiable>();
     FileTreeVisitor.Simple<RuntimeException> visitor = new FileTreeVisitor.Simple<RuntimeException>() {
       public void visitFile(File file) {
         if (!CompilerUtils.isJavaScriptFile(file)) return;
         listFiles.add(file);
-        JSSourceFile sourceFile = JSSourceFile.fromFile(file);
+        SourceFile sourceFile = SourceFile.fromFile(file);
         listSourceFiles.add(sourceFile);
         //listAsts.add(new JsAstFactoryFromFile(file));
       }
@@ -65,16 +66,16 @@ public class MainForDebug {
       for (AstFactoryFromModifiable ast: listAsts) {
         module.add(new CompilerInput(ast.getClone(false)));
       }
-//      for (JSSourceFile sourceFile: listSourceFiles) {
+//      for (SourceFile sourceFile: listSourceFiles) {
 //        module.add(new CompilerInput(sourceFile));
 //      }
 //      for (File file: listFiles) {
-//        module.add(new CompilerInput(JSSourceFile.fromFile(file)));
+//        module.add(new CompilerInput(SourceFile.fromFile(file)));
 //      }
       Compiler compiler = CompilerUtils.makeCompiler(CompilerUtils.makePrintingErrorManager(System.out));
       CompilerOptions options = CompilerUtils.makeOptionsForParsingAndErrorReporting();
       options.checkTypes = true;
-      compiler.compile(new JSSourceFile[]{}, new JSModule[]{module}, options);
+      compiler.compileModules(Arrays.<SourceFile> asList(), Arrays.asList(module), options);
       System.out.println(compiler.toSource().length());
     }
     long tf = System.nanoTime();
@@ -82,7 +83,7 @@ public class MainForDebug {
     System.out.println((tf - t1) * 1e-9);
     System.out.println("DONE");
   }
-  
+
   public static void testCompilationSet() {
     /*
      * Jan 31, 2012 9:43:00 PM com.google.javascript.jscomp.PhaseOptimizer$NamedPass process
@@ -102,17 +103,17 @@ INFO: processDefines
 
      */
   }
-  
+
   public static void compile(JSModule module) {
-    Compiler compiler = CompilerUtils.makeCompiler(CompilerUtils.makePrintingErrorManager(System.out));    
+    Compiler compiler = CompilerUtils.makeCompiler(CompilerUtils.makePrintingErrorManager(System.out));
     CompilerOptions options = CompilerUtils.makeOptionsForParsingAndErrorReporting();
     compiler.initOptions(options);
-    
-    JSSourceFile extern = JSSourceFile.fromCode("externs.js", "");
-    compiler.compile(extern, new JSModule[]{module}, options);
+
+    SourceFile extern = SourceFile.fromCode("externs.js", "");
+    compiler.compileModules(Arrays.asList(extern), Arrays.asList(module), options);
     System.out.println(compiler.toSource());
   }
-  
+
   private static class MyCompilerPass implements CompilerPass {
 
     private Compiler compiler;
@@ -154,10 +155,10 @@ INFO: processDefines
 
     }
   }
-  
+
   private static void testDeps() {
   }
-  
+
   public static void main(String[] args) {
     testDeps();
   }
